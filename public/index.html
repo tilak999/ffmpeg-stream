@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>FFMPEG Stream</title>
+</head>
+<body>
+    <input type="file" name="video" id="file-input"/>
+    <video id="video" controls width="800px"></video>
+
+    <script>
+        if (Hls.isSupported()) {
+            hls = new Hls(); 
+            hls.attachMedia(document.getElementById('video'));
+            
+            // MEDIA_ATTACHED event is fired by hls object once MediaSource is ready
+            hls.on(Hls.Events.MEDIA_ATTACHED, function () {
+                console.log('video and hls.js are now bound together !');
+            });
+
+            hls.on(Hls.Events.ERROR, function (event, data) {
+                var errorType = data.type;
+                var errorDetails = data.details;
+                var errorFatal = data.fatal;
+                console.log(errorType, errorDetails, errorFatal)
+            });
+
+            hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+                console.log(
+                    'manifest loaded, found ' + data.levels.length + ' quality level'
+                );
+            });
+        } else {
+            alert("hls not supported")
+        }
+
+        document.getElementById("file-input").onchange = function (e) {
+            const files = e.target.files
+            if(files.length > 0) {
+                const form = new FormData()
+                form.set("video", files[0])
+                axios.post("/api/upload", form).then(result=>{
+                    const playlist_url = result.data.playlist_url;
+                    hls.loadSource(playlist_url);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
