@@ -4,9 +4,10 @@ const path = require("path");
 const processVideo = require("./lib/processVideo");
 
 const app = express();
-const port = 3000;
+const port = 8081;
 
 app.use(express.static("public"));
+const workingDir = path.join(__dirname, "working_dir");
 
 app.use(
   fileUpload({
@@ -16,31 +17,25 @@ app.use(
 );
 
 app.post("/api/upload", (req, res) => {
-  processVideo.generatePlaylist(req.files.video).then(({ mediaId }) => {
-    res.send({
-      playlist_url: `/playlist/${mediaId}.m3u8`,
-    });
+  processVideo.prepareMedia(req.files.video).then((data) => {
+    res.status(200).send({ playlist: `/api/playlist/${data.mediaId}/playlist.m3u8`});
   });
 });
 
-app.get("/playlist/:mediaId", (req, res) => {
-  const filepath = path.join(
-    __dirname,
-    "working_dir",
-    req.params.mediaId.replace(".m3u8", ""),
-    "playlist.m3u8"
-  );
+app.get("/api/playlist/:mediaId/:file", (req, res) => {
+  const {mediaId, file} = req.params;
+  console.log(req.params)
+  const filepath = path.join(workingDir, mediaId, file);
   res.sendFile(filepath);
 });
 
-app.get("/api/getSegment", (req, res) => {
-  const segId = req.query["seg_id"];
-  const media = req.query["media"];
-  const file = path.join(__dirname, "working_dir", media, segId);
-  processVideo.transcode(file).then((outPath) => {
-    console.log("chunk..", segId);
+app.get("/api/getSegment", (req, resp) => {
+  const  { media, id, len, transcode, res, final } = req.query;
+  console.log(req.query)
+  processVideo.getSegment(media, id, len, transcode, res, final).then((outPath) => {
+    console.log("chunk..", id);
     res.sendFile(outPath);
-  });
+  }).catch(console.error)
 });
 
 app.listen(port, () => {
