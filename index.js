@@ -34,7 +34,7 @@ app.get("/api/getSegment", (req, resp) => {
   console.log(req.query)
   processVideo.getSegment(media, id, len, transcode, res, final).then((outPath) => {
     console.log("chunk..", id);
-    res.sendFile(outPath);
+    resp.sendFile(outPath);
   }).catch(console.error)
 });
 
